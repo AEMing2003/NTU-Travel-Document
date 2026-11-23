@@ -1,6 +1,6 @@
 {
   "name": "ntu-travel-document-studio-desktop",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "private": true,
   "description": "臺大出差文件製作站—Windows 與 macOS 桌面版（連接既有 Netlify/Supabase）",
   "main": "main.js",
@@ -12,7 +12,7 @@
   "scripts": {
     "start": "electron .",
     "test": "node --test tests/*.test.js",
-    "lint": "node --check main.js && node --check src/url-policy.js && node --check src/login-link.js && node --check src/login-preload.js",
+    "lint": "node --check main.js && node --check src/url-policy.js && node --check src/login-link.js && node --check src/login-preload.js && node --check src/native-auth.js",
     "dist:win": "electron-builder --win nsis portable --x64",
     "dist:mac": "electron-builder --mac dmg zip --x64 --arm64"
   },

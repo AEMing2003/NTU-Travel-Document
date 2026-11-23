@@ -8,13 +8,15 @@ const {
   APP_URL, isAppURL, isAppBlobURL, isTrustedMagicVerifyURL,
   inspectMagicLinkClipboard, isExternalLinkAllowed,
 } = require('./src/url-policy');
+const { STORAGE_KEY, parseVerifyPayload, verifyMagicLinkWithAuth } = require('./src/native-auth');
 
 const APP_TITLE = '臺大出差文件製作站';
-const APP_VERSION = '1.0.3';
+const APP_VERSION = '1.0.4';
 const PERSISTENT_SESSION = 'persist:ntu-travel-document-studio';
 let mainWindow = null;
 let loginWindow = null;
 let offlineMode = false;
+let lastAuthStatus = '尚未在 v1.0.4 進行登入驗證';
 
 if (!app.requestSingleInstanceLock()) {
   app.quit();
@@ -190,11 +192,62 @@ function setupLoginIPC() {
   });
 }
 
-function openValidatedMagicLink(link) {
+async function openValidatedMagicLink(link) {
   if (!mainWindow) return;
+  const nativePayload = parseVerifyPayload(link);
+  if (nativePayload) {
+    lastAuthStatus = '已收到 Supabase 驗證連結，準備驗證';
+    try {
+      // Supabase documents verifyOtp(token_hash,type) for email auth. Use the REST
+      // equivalent to obtain a proper session, not merely navigate to a callback.
+      const result = await verifyMagicLinkWithAuth(link);
+      lastAuthStatus = 'Supabase 驗證成功，正在建立 APP 登入資料';
+      if (!mainWindow) return;
+      if (!isAppURL(mainWindow.webContents.getURL())) {
+        await mainWindow.loadURL(APP_URL);
+      }
+      if (!mainWindow) return;
+      // Store into the SAME origin/partition as the site SDK. This is the
+      // standard supabase-js default storage key. No external token export.
+      const serialized = JSON.stringify(result);
+      const script = `(() => {
+        if (location.origin !== ${JSON.stringify(new URL('https://ntu-travel-document-studio.netlify.app/').origin)}) return false;
+        localStorage.setItem(${JSON.stringify(STORAGE_KEY)}, ${JSON.stringify(serialized)});
+        return Boolean(localStorage.getItem(${JSON.stringify(STORAGE_KEY)}));
+      })()`;
+      const stored = await mainWindow.webContents.executeJavaScript(script, true);
+      if (!stored) throw new Error('無法將登入資料儲存到網站的本機儲存空間');
+      lastAuthStatus = 'Supabase 已核發 Session，APP 已保存；等待網站確認登入';
+      await mainWindow.loadURL(APP_URL);
+      // Only confirms storage, not the site's role/permissions.
+      if (!mainWindow) return;
+      const hasToken = await mainWindow.webContents.executeJavaScript(
+        `Boolean(localStorage.getItem(${JSON.stringify(STORAGE_KEY)}))`, true);
+      lastAuthStatus = hasToken ? 'APP 已保存 Supabase 登入 Session（網站權限仍需確認）' : '登入後重新載入，Session 未被保留';
+      await dialog.showMessageBox(mainWindow, {
+        type: hasToken ? 'info' : 'warning',
+        title: '桌面登入驗證結果',
+        message: hasToken ? 'Supabase 登入驗證已成功' : '登入資料未能保留',
+        detail: hasToken ? 'APP 已在本機儲存 Session。請確認網站是否顯示帳號與管理員身分；若仍為訪客，請回報「登入 → 檢查 APP 登入狀態」結果。' : '請使用「登入 → 檢查 APP 登入狀態」取得診斷。',
+      });
+    } catch (error) {
+      // Messages originate from our own bounded error strings, never server JSON.
+      lastAuthStatus = `登入驗證失敗：${error.message}`;
+      if (mainWindow) await dialog.showMessageBox(mainWindow, {
+        type: 'error', title: '桌面登入未完成',
+        message: '無法建立 APP 的 Supabase Session',
+        detail: error.message,
+      });
+    }
+    return;
+  }
+  // Compatibility: PKCE app callbacks and session-bearing URLs remain handled
+  // by the existing website logic; these links cannot be verified by token hash.
   offlineMode = false;
+  lastAuthStatus = '登入連結已交給網站回呼處理，尚未確認 Session';
   mainWindow.focus();
   mainWindow.loadURL(link).catch(() => {
+    lastAuthStatus = '網站登入回呼載入失敗';
     if (!mainWindow) return;
     dialog.showMessageBox(mainWindow, {
       type: 'error', title: '登入連結開啟失敗',
@@ -252,7 +305,7 @@ async function showLoginDiagnostics() {
   await dialog.showMessageBox(mainWindow, {
     type: 'info', title: '桌面登入診斷',
     message: `桌面程式版本：v${APP_VERSION}`,
-    detail: `目前畫面：${isAppURL(current) ? '正式網站' : '網站外／錯誤頁'}\n驗證儲存空間：${storage}\n\n`
+    detail: `目前畫面：${isAppURL(current) ? '正式網站' : '網站外／錯誤頁'}\n驗證儲存空間：${storage}\n最近一次驗證：${lastAuthStatus}\n\n`
       + '如果使用手機 Gmail，請改在同一台 Windows／Mac 電腦開啟 Gmail。\n'
       + '必須先由 APP 內寄出新的登入信，再複製「Sign in」的連結網址，\n'
       + '回到 APP → 登入 → 貼上 Magic Link（視窗），貼入網址並點「在 APP 驗證」。\n'

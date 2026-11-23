@@ -1,6 +1,6 @@
-# 臺大出差文件製作站｜Windows & macOS 桌面版 v1.0.3
+# 臺大出差文件製作站｜Windows & macOS 桌面版 v1.0.4
 
-> **專案狀態：針對 macOS 貼上快捷鍵及 APP Magic Link 的 v1.0.3 修正版；單元測試已通過，但尚未以真實 Magic Link 在 Windows/macOS 上驗收。**
+> **專案狀態：v1.0.4 新增 Supabase 原生驗證與 Session 寫入；通過單元測試，但尚未以真實 Magic Link 在 Windows/macOS 上驗收。**
 > 網站基礎：[https://ntu-travel-document-studio.netlify.app/](https://ntu-travel-document-studio.netlify.app/)（2026-11-23 已檢視線上網站標示 v2.1.5）。
 
 ## 這是什麼
@@ -44,14 +44,14 @@
 1. 在**桌面程式內**，於網站登入區填寫已有帳號的 Email，按「寄送 Magic Link 登入信」。
 2. 到信箱找到信件，對登入按鈕／連結按 **右鍵 → 複製連結網址**；**不要先點擊**（避免一次性連結已被使用）。
 3. 返回桌面程式，點選 **「登入 → 從剪貼簿開啟 Magic Link」**。快捷鍵：Windows `Ctrl+Shift+L`，Mac `⌘⇧L`。也可以選「登入 → 貼上 Magic Link」視窗，再用 `⌘V` 或 **「從剪貼簿貼入」** 按鈕。
-4. 確認後，程式會在相同桌面視窗中完成驗證並返回正式網站。
+4. 確認後，若是 Supabase 官方寄出的 `token_hash` 驗證連結，程式會直接向 Supabase Auth 驗證並將 Session 寫入網站本機儲存，再重新載入正式網站。APP 會明確顯示成功或失敗。
 
 這個功能只接受本網站的帶驗證參數回呼網址，或本專案 `pcjbfvmebzbiyednzjyt.supabase.co/auth/v1/verify` 的一次性驗證網址，並可辨識 Gmail/Outlook 常見安全轉址；**登入連結不寫入磁碟、不傳送給封裝作者、不輸出至記錄檔**。驗證由既有 Supabase 提供。
 
 若 APP 顯示「尚無法辨識這段 Magic Link」，請查看提示中的「網址主機」：
 
-- `www.google.com`：可能是 Gmail 連結包裝；v1.0.3 已支援常見 `/url` 格式。
-- `*.safelinks.protection.outlook.com`：v1.0.3 已支援常見 SafeLinks `url=` 格式。
+- `www.google.com`：可能是 Gmail 連結包裝；v1.0.4 已支援常見 `/url` 格式。
+- `*.safelinks.protection.outlook.com`：v1.0.4 已支援常見 SafeLinks `url=` 格式。
 - 其他網域：可能是其他郵件轉址器或追蹤服務，請只回報**主機名稱**以便增加安全辨識規則。
 - 顯示「未偵測到 HTTPS 網址」：常見於只複製登入按鈕文字而非真正的超連結。
 
@@ -78,14 +78,14 @@
 Windows PowerShell：
 
 ```powershell
-cd ntu-travel-desktop-v1.0.3
+cd ntu-travel-desktop-v1.0.4
 powershell -ExecutionPolicy Bypass -File .\scripts\build-windows.ps1
 ```
 
 macOS Terminal：
 
 ```bash
-cd ntu-travel-desktop-v1.0.3
+cd ntu-travel-desktop-v1.0.4
 bash scripts/build-macos.sh
 ```
 
@@ -136,22 +136,22 @@ npm run dist:mac    # Mac Intel 與 Apple Silicon DMG/ZIP
 此桌面封裝僅屬既有網站客戶端。非國立臺灣大學官方軟體，實際報支與簽核仍請依校方最新規定辦理。
 
 
-## v1.0.3 更新步驟（從現有 GitHub v1.0.0 升級）
+## v1.0.4 更新步驟（從現有 GitHub v1.0.0 升級）
 
-1. 下載 v1.0.3 完整專案 ZIP 並解壓縮。
-2. 將內層 `ntu-travel-desktop-v1.0.3` 目錄的**所有內容**覆蓋到現有 GitHub Repository 根目錄；若用 GitHub Desktop，可在本機 clone 後複製取代並 Commit + Push。
-3. 確認 `package.json` 的 `version` 為 `1.0.1`，並保留 `.github/workflows/build-desktop.yml`。
+1. 下載 v1.0.4 完整專案 ZIP 並解壓縮。
+2. 將內層 `ntu-travel-desktop-v1.0.4` 目錄的**所有內容**覆蓋到現有 GitHub Repository 根目錄；若用 GitHub Desktop，可在本機 clone 後複製取代並 Commit + Push。
+3. 確認 `package.json` 的 `version` 為 `1.0.4`，並保留 `.github/workflows/build-desktop.yml`。
 4. GitHub Actions 會在推送到 `main` 後自動產出新的 Windows/macOS Artifacts。
 5. 安裝新版，**在 APP 內重新寄送新的 Magic Link**，不要再次使用之前已驗證過的郵件連結。
 
 **本次沒有更動網站或 Supabase 後端；登入修正僅存在於新打包的桌面版 APP，無法只重新整理原本 v1.0.0 APP 就取得修正。**
 
 
-## v1.0.3：桌面登入問題排查
+## v1.0.4：桌面登入問題排查
 
-現有版本在 Gmail 電郵中直接點擊 Sign in，通常會由手機／一般瀏覽器開啟，因此桌面 APP 仍為訪客。這次加入原生「登入 → 貼上 Magic Link（可看到辨識錯誤）」視窗，並保留剪貼簿快速功能。
+先前版本在 Gmail 電郵中直接點擊 Sign in，通常會由手機／一般瀏覽器開啟，因此桌面 APP 仍為訪客。這次加入原生「登入 → 貼上 Magic Link（可看到辨識錯誤）」視窗，並保留剪貼簿快速功能。
 
-1. 於 APP「說明 → 關於桌面版」確認顯示 `v1.0.3`。
+1. 於 APP「說明 → 關於桌面版」確認顯示 `v1.0.4`。
 2. 在 APP 登入區寄送 **新的** Magic Link（同一個 APP 裡的 Supabase PKCE 驗證需要對應當次請求的驗證器）。
 3. 在 **同一台 Windows／Mac 電腦** 使用 Gmail 網站開啟郵件，對 Sign in **按右鍵 → 複製連結網址**，不要直接點擊 Sign in。
 4. 在 APP 選「登入 → 貼上 Magic Link（可看到辨識錯誤）」，按 Ctrl+V／⌘V 將網址貼入，點「在 APP 內驗證」。
@@ -160,10 +160,21 @@ npm run dist:mac    # Mac Intel 與 Apple Silicon DMG/ZIP
 **限制：** 單元測試不代表已使用真實電子郵件完成登入。登入是否成功需以 APP 顯示登入帳號與角色為準；本程式未修改 Netlify 或 Supabase 的伺服器設定。
 
 
-## v1.0.3 Mac 貼上修正
+## v1.0.4 Mac 貼上修正
 
 - 補上 Electron 原生 `editMenu`，提供標準剪下／複製／貼上／全選快捷鍵，避免 macOS 自訂選單導致 `⌘V` 失效。
 - 在登入視窗新增「從剪貼簿貼入」按鈕，可在快捷鍵無效時將同一台電腦剪貼簿的文字放入遮蔽的輸入框。
 - 剪貼簿讀取只接受受信任的本機登入視窗 IPC 來源，最多 32768 字元；不另行儲存連結。
 - 也可直接利用現有的「登入 → 從剪貼簿開啟 Magic Link」（Mac `⌘⇧L`），不需要先貼入欄位。
 - APP 與網頁的登入 session 仍相互獨立；本版不修改 Netlify 或 Supabase。
+
+## v1.0.4：原生驗證流程
+
+由於 v1.0.3 只是導向 URL，無法保證網站會建立 Session，v1.0.4 針對本專案 Supabase `/auth/v1/verify?token=...&type=email|magiclink` 的原始連結，直接請 Supabase Auth 驗證並取回 Session，寫入原網站的標準 Supabase 本機儲存後重新開啟網站。此資料不會傳送到其他伺服器或日誌。已使用過的連結仍無法重新使用。
+
+驗證後會顯示結果：
+- 「Supabase 登入驗證已成功」：APP 已保存標準 Session；仍要檢查網站帳號與管理員角色。
+- 「登入連結已過期、已使用...」：請在 APP 重新寄新的連結。
+- 「Supabase 未回傳完整 Session」或仍為訪客：可能是網站使用自訂 Storage Key 或 Auth callback 程式，需要查看網站原始碼繼續整合。
+
+此版含固定專案的 Supabase **publishable** key，絕無 service_role。若未來更新 Supabase 專案必須更新固定專案資訊。

@@ -1,32 +1,9 @@
-# v1.0.3 (2026-11-23)
+# Desktop v1.0.4 — Supabase Native Magic Link Verify
 
-- 修正 macOS APP 在自訂選單缺少標準編輯角色時，`⌘V` 無法貼上。
-- 新增本機 Magic Link 視窗的「從剪貼簿貼入」按鈕，並限制讀取 IPC 僅有本機視窗可使用。
-- Windows 與 macOS 沿用既有安全連結檢查；不修改網站或資料庫。
-- 已通過程式測試，但尚未完成 Mac 真實登入的實機驗收。
+- 從 Supabase 官方驗證連結讀取一次性 token hash，直接透過 Supabase Auth 的 POST /auth/v1/verify 驗證。
+- 成功後將 Auth 回傳的 Session 儲存在網頁原本的 localStorage key（沿用同一 origin/partition），再重新載入既有網站。
+- 驗證失敗時明確顯示過期、寄送限制、網路或缺少 Session 等情況；不記錄、不顯示驗證憑證。
+- 「登入 → 檢查 APP 登入狀態」現在提供最近一次驗證結果。
+- 網站回呼連結保留舊路徑相容性，並非所有自訂登入流程皆可直接交換 token。
 
-# v1.0.2 (2026-11-23)
-
-- 新增原生 Magic Link 貼上視窗：不依賴跨裝置共用剪貼簿；避免直接在郵件中點擊 Sign in 而開啟一般瀏覽器。
-- 新增登入狀態診斷：只檢查存在性，不讀取或顯示登入憑證。
-- 保留 v1.0.1 安全網址辨識與原有的 Windows／macOS 自動建置設定。
-- 未修改正式網站與資料庫，尚需 Windows／macOS 真實登入驗收。
-
-# 變更記錄
-
-## Desktop v1.0.1（2026-11-23）
-
-- 修正桌面版「剪貼簿不是支援的登入連結」：改善 Supabase Magic Link 辨識。
-- 支援常見 Gmail（`www.google.com/url`）與 Outlook SafeLinks 的轉址包裝、HTML `&amp;` 轉義與電子郵件 HTML 連結。
-- 僅允許「TRAVEL DOCUMENT STUDIO」專屬 Supabase 驗證網址與本網站的 Auth 回呼，不任意開啟其他專案連結。
-- 多個不同的 Magic Link 會要求使用者重新複製，避免誤用。
-- 失敗時只顯示偵測到的網址主機名稱，不顯示或記錄完整一次性認證網址。
-- 11 項單元測試與語法檢查通過。
-- 沒有修改既有網站、Supabase 資料庫、使用者權限、表單及 PDF 相關設定。
-- 尚須在已打包的 Windows/macOS APP 中，以真實收到的 Magic Link 驗收。
-
-## Desktop v1.0.0（2026-11-23）
-
-- 初始 Electron 桌面應用程式；連接既有 Netlify 網站。
-- Windows + macOS GitHub Actions 自動打包。
-- 原版 Supabase Magic Link 剪貼簿選單（目前已改良）。
+安全註記：程式只使用 Supabase Publishable Key（非 secret/service_role）；未修改 Supabase 後端、RLS、Netlify 網站或共用資料。未在實機完成真實登入驗證，需安裝後測試。

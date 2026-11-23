@@ -1,4 +1,1 @@
-臺大出差文件製作站桌面版 v1.0.2
-狀態：電子郵件 Magic Link 的桌面貼上介面與診斷修正版，未完成真實信件端到端驗收。
-網站：現有 Netlify/Supabase，未修改。
-先在 APP 寄信，同一台電腦從 Gmail 複製 Sign in 的原始連結，透過 APP 登入 → 貼上 Magic Link，在 APP 內完成。
+Desktop v1.0.4: source-only native verification fallback. Static tests only; not live auth tested. No installer binaries included.
