@@ -6,11 +6,11 @@ const {
 } = require('electron');
 const {
   APP_URL, isAppURL, isAppBlobURL, isTrustedMagicVerifyURL,
-  magicLinkFromClipboard, isExternalLinkAllowed,
+  inspectMagicLinkClipboard, isExternalLinkAllowed,
 } = require('./src/url-policy');
 
 const APP_TITLE = '臺大出差文件製作站';
-const APP_VERSION = '1.0.0';
+const APP_VERSION = '1.0.1';
 const PERSISTENT_SESSION = 'persist:ntu-travel-document-studio';
 let mainWindow = null;
 let offlineMode = false;
@@ -157,15 +157,18 @@ function reloadWebsite() {
 
 async function openMagicLinkFromClipboard() {
   if (!mainWindow) return;
-  const link = magicLinkFromClipboard(clipboard.readText());
-  if (!link) {
+  const result = inspectMagicLinkClipboard(clipboard.readText(), clipboard.readHTML());
+  if (!result.link) {
     await dialog.showMessageBox(mainWindow, {
       type: 'warning', title: '未找到有效 Magic Link',
-      message: '剪貼簿不是支援的登入連結。',
+      message: result.reason === 'multiple'
+        ? '剪貼簿中找到多個不同的登入網址。'
+        : '桌面程式尚無法辨識這段 Magic Link。',
       detail:
-        '請先在桌面程式的網站中輸入 Email 並寄送登入信，再到信件中「複製連結網址」（不要先點開）。\n'
-        + '回到桌面程式，選擇「登入 → 從剪貼簿開啟 Magic Link」。\n\n'
-        + '為安全起見，僅接受本網站的驗證回呼或 Supabase 官方驗證網址。',
+        `偵測到的網址主機：${result.observedHost || '未偵測到 HTTPS 網址'}\n`
+        + '請複製郵件中登入按鈕的原始「連結網址」，而不是按鈕文字。\n'
+        + '已支援本網站、所使用的 Supabase 專案，以及常見 Gmail／Outlook 安全轉址。\n\n'
+        + '如果仍失敗，只需回報上述「網址主機」，請勿傳送包含 token 的完整登入網址。',
     });
     return;
   }
@@ -178,7 +181,7 @@ async function openMagicLinkFromClipboard() {
   if (response !== 1 || !mainWindow) return;
   offlineMode = false;
   // Never log, persist, or echo the secret URL. The page handles its own tokens.
-  mainWindow.loadURL(link).catch(() => {
+  mainWindow.loadURL(result.link).catch(() => {
     dialog.showMessageBox(mainWindow, {
       type: 'error', title: '登入連結開啟失敗',
       message: '請檢查網路，或重新寄送 Magic Link 並複製原始連結。',

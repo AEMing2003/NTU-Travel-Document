@@ -1,6 +1,6 @@
 {
   "name": "ntu-travel-document-studio-desktop",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "description": "臺大出差文件製作站—Windows 與 macOS 桌面版（連接既有 Netlify/Supabase）",
   "main": "main.js",

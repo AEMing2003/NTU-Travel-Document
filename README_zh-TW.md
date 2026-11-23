@@ -1,6 +1,6 @@
-# 臺大出差文件製作站｜Windows & macOS 桌面版 v1.0.0
+# 臺大出差文件製作站｜Windows & macOS 桌面版 v1.0.1
 
-> **專案狀態：桌面程式原始碼及建置流程已完成；尚未產出或在 Windows/macOS 上驗證原生 `.exe` / `.dmg`。**
+> **專案狀態：針對 APP Magic Link 的 v1.0.1 修正版；11 項單元測試已通過，但尚未以真實 Magic Link 在 Windows/macOS 上驗收。**
 > 網站基礎：[https://ntu-travel-document-studio.netlify.app/](https://ntu-travel-document-studio.netlify.app/)（2026-11-23 已檢視線上網站標示 v2.1.5）。
 
 ## 這是什麼
@@ -46,9 +46,18 @@
 3. 返回桌面程式，點選 **「登入 → 從剪貼簿開啟 Magic Link」**。快捷鍵：Windows `Ctrl+Shift+L`，Mac `⌘⇧L`。
 4. 確認後，程式會在相同桌面視窗中完成驗證並返回正式網站。
 
-這個功能只接受本網站的帶驗證參數回呼網址，或 `*.supabase.co/auth/v1/verify` 的一次性驗證網址；**登入連結不寫入磁碟、不傳送給封裝作者、不輸出至記錄檔**。驗證由既有 Supabase 提供。
+這個功能只接受本網站的帶驗證參數回呼網址，或本專案 `pcjbfvmebzbiyednzjyt.supabase.co/auth/v1/verify` 的一次性驗證網址，並可辨識 Gmail/Outlook 常見安全轉址；**登入連結不寫入磁碟、不傳送給封裝作者、不輸出至記錄檔**。驗證由既有 Supabase 提供。
 
-若驗證失敗或信件連結已過期，重新寄送一封新 Magic Link 再試。部分 Email 用戶端可能改寫連結，請優先複製原始目標網址。
+若 APP 顯示「尚無法辨識這段 Magic Link」，請查看提示中的「網址主機」：
+
+- `www.google.com`：可能是 Gmail 連結包裝；v1.0.1 已支援常見 `/url` 格式。
+- `*.safelinks.protection.outlook.com`：v1.0.1 已支援常見 SafeLinks `url=` 格式。
+- 其他網域：可能是其他郵件轉址器或追蹤服務，請只回報**主機名稱**以便增加安全辨識規則。
+- 顯示「未偵測到 HTTPS 網址」：常見於只複製登入按鈕文字而非真正的超連結。
+
+**不要向任何人傳送完整 Magic Link（可能含 token / code）。** 修正只處理已知安全格式，不能保證所有寄信服務的自訂追蹤連結都能解析；Supabase 官方也建議關閉會改寫登入網址的郵件追蹤功能。<https://supabase.com/docs/guides/auth/auth-email-templates>
+
+如果認證已經被瀏覽器使用，或連結已過期，請在 **APP 內**重新寄送一封新 Magic Link 再試。網頁版與桌面版登入儲存空間不同，不會因網頁成功登入就自動同步登入狀態。
 
 ## 本機資料與隱私
 
@@ -69,14 +78,14 @@
 Windows PowerShell：
 
 ```powershell
-cd ntu-travel-desktop-v1.0.0
+cd ntu-travel-desktop-v1.0.1
 powershell -ExecutionPolicy Bypass -File .\scripts\build-windows.ps1
 ```
 
 macOS Terminal：
 
 ```bash
-cd ntu-travel-desktop-v1.0.0
+cd ntu-travel-desktop-v1.0.1
 bash scripts/build-macos.sh
 ```
 
@@ -125,3 +134,14 @@ npm run dist:mac    # Mac Intel 與 Apple Silicon DMG/ZIP
 - **尚未驗證**：實際 Windows / macOS 原生安裝、在桌面版完成真實 Magic Link 登入、使用真實 Supabase 使用者、表單 PDF 下載列印、簽章選檔與 macOS Gatekeeper。因此勿把未測功能描述成已通過實機驗收。
 
 此桌面封裝僅屬既有網站客戶端。非國立臺灣大學官方軟體，實際報支與簽核仍請依校方最新規定辦理。
+
+
+## v1.0.1 更新步驟（從現有 GitHub v1.0.0 升級）
+
+1. 下載 v1.0.1 完整專案 ZIP 並解壓縮。
+2. 將內層 `ntu-travel-desktop-v1.0.1` 目錄的**所有內容**覆蓋到現有 GitHub Repository 根目錄；若用 GitHub Desktop，可在本機 clone 後複製取代並 Commit + Push。
+3. 確認 `package.json` 的 `version` 為 `1.0.1`，並保留 `.github/workflows/build-desktop.yml`。
+4. GitHub Actions 會在推送到 `main` 後自動產出新的 Windows/macOS Artifacts。
+5. 安裝新版，**在 APP 內重新寄送新的 Magic Link**，不要再次使用之前已驗證過的郵件連結。
+
+**本次沒有更動網站或 Supabase 後端；登入修正僅存在於新打包的桌面版 APP，無法只重新整理原本 v1.0.0 APP 就取得修正。**

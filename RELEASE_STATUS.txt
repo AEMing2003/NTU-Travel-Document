@@ -1,19 +1,14 @@
-臺大出差文件製作站｜跨平台桌面版 v1.0.0
-日期：2026-11-23
+Desktop version: v1.0.1
+Date: 2026-11-23
+Project: 臺大出差文件製作站 Windows / macOS Desktop
+Platform: Electron (existing Netlify site and Supabase project)
 
-已完成：
-- 實際指向 https://ntu-travel-document-studio.netlify.app/ 的 Electron 桌面程式原始碼
-- Windows x64 安裝版／免安裝版的建置設定
-- macOS Intel x64／Apple Silicon arm64 的 DMG/ZIP 建置設定
-- 桌面程式 Magic Link 登入連結入口
-- PDF 下載儲存設定、網路離線畫面、網域安全限制
-- GitHub Actions 自動建置工作流程
-- Node.js URL 安全測試（6 項通過）及 JavaScript 語法檢查（通過）
+Change: Fix and diagnose Magic Link clipboard parsing for known Gmail and Outlook URL wrappers. Restrict trusted Supabase verification links to the project's exact host. Sanitize errors so tokens are never displayed.
 
-仍需實作環境驗收：
-- Windows 與 macOS 的原生 Electron 安裝包編譯及開啟
-- 使用者 Magic Link 實際驗證（需要合法測試帳號）
-- PDF 列印、下載、簽名上傳、Supabase 管理功能實測
-- 可選：Windows 程式碼簽章、Apple Developer ID 簽章／公證
+Verification:
+- node --test tests/*.test.js: 11 passed
+- npm run lint: passed
+- Windows / macOS native app real-email login: NOT YET VERIFIED
+- No changes to Netlify deployment or Supabase database.
 
-此檔案為原始碼與建置工程，不包含已編譯 exe/dmg，也不包含網站原始碼或 Supabase 密鑰。
+To deploy: Copy the files in this directory to the existing GitHub repository root, commit to main, and download the new workflow artifacts. The repository needs its original .github/workflows/build-desktop.yml file (included).
