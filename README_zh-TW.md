@@ -1,6 +1,6 @@
-# 臺大出差文件製作站｜Windows & macOS 桌面版 v1.0.1
+# 臺大出差文件製作站｜Windows & macOS 桌面版 v1.0.2
 
-> **專案狀態：針對 APP Magic Link 的 v1.0.1 修正版；11 項單元測試已通過，但尚未以真實 Magic Link 在 Windows/macOS 上驗收。**
+> **專案狀態：針對 APP Magic Link 的 v1.0.2 修正版；單元測試已通過，但尚未以真實 Magic Link 在 Windows/macOS 上驗收。**
 > 網站基礎：[https://ntu-travel-document-studio.netlify.app/](https://ntu-travel-document-studio.netlify.app/)（2026-11-23 已檢視線上網站標示 v2.1.5）。
 
 ## 這是什麼
@@ -50,8 +50,8 @@
 
 若 APP 顯示「尚無法辨識這段 Magic Link」，請查看提示中的「網址主機」：
 
-- `www.google.com`：可能是 Gmail 連結包裝；v1.0.1 已支援常見 `/url` 格式。
-- `*.safelinks.protection.outlook.com`：v1.0.1 已支援常見 SafeLinks `url=` 格式。
+- `www.google.com`：可能是 Gmail 連結包裝；v1.0.2 已支援常見 `/url` 格式。
+- `*.safelinks.protection.outlook.com`：v1.0.2 已支援常見 SafeLinks `url=` 格式。
 - 其他網域：可能是其他郵件轉址器或追蹤服務，請只回報**主機名稱**以便增加安全辨識規則。
 - 顯示「未偵測到 HTTPS 網址」：常見於只複製登入按鈕文字而非真正的超連結。
 
@@ -78,14 +78,14 @@
 Windows PowerShell：
 
 ```powershell
-cd ntu-travel-desktop-v1.0.1
+cd ntu-travel-desktop-v1.0.2
 powershell -ExecutionPolicy Bypass -File .\scripts\build-windows.ps1
 ```
 
 macOS Terminal：
 
 ```bash
-cd ntu-travel-desktop-v1.0.1
+cd ntu-travel-desktop-v1.0.2
 bash scripts/build-macos.sh
 ```
 
@@ -136,12 +136,25 @@ npm run dist:mac    # Mac Intel 與 Apple Silicon DMG/ZIP
 此桌面封裝僅屬既有網站客戶端。非國立臺灣大學官方軟體，實際報支與簽核仍請依校方最新規定辦理。
 
 
-## v1.0.1 更新步驟（從現有 GitHub v1.0.0 升級）
+## v1.0.2 更新步驟（從現有 GitHub v1.0.0 升級）
 
-1. 下載 v1.0.1 完整專案 ZIP 並解壓縮。
-2. 將內層 `ntu-travel-desktop-v1.0.1` 目錄的**所有內容**覆蓋到現有 GitHub Repository 根目錄；若用 GitHub Desktop，可在本機 clone 後複製取代並 Commit + Push。
+1. 下載 v1.0.2 完整專案 ZIP 並解壓縮。
+2. 將內層 `ntu-travel-desktop-v1.0.2` 目錄的**所有內容**覆蓋到現有 GitHub Repository 根目錄；若用 GitHub Desktop，可在本機 clone 後複製取代並 Commit + Push。
 3. 確認 `package.json` 的 `version` 為 `1.0.1`，並保留 `.github/workflows/build-desktop.yml`。
 4. GitHub Actions 會在推送到 `main` 後自動產出新的 Windows/macOS Artifacts。
 5. 安裝新版，**在 APP 內重新寄送新的 Magic Link**，不要再次使用之前已驗證過的郵件連結。
 
 **本次沒有更動網站或 Supabase 後端；登入修正僅存在於新打包的桌面版 APP，無法只重新整理原本 v1.0.0 APP 就取得修正。**
+
+
+## v1.0.2：桌面登入問題排查
+
+現有版本在 Gmail 電郵中直接點擊 Sign in，通常會由手機／一般瀏覽器開啟，因此桌面 APP 仍為訪客。這次加入原生「登入 → 貼上 Magic Link（可看到辨識錯誤）」視窗，並保留剪貼簿快速功能。
+
+1. 於 APP「說明 → 關於桌面版」確認顯示 `v1.0.2`。
+2. 在 APP 登入區寄送 **新的** Magic Link（同一個 APP 裡的 Supabase PKCE 驗證需要對應當次請求的驗證器）。
+3. 在 **同一台 Windows／Mac 電腦** 使用 Gmail 網站開啟郵件，對 Sign in **按右鍵 → 複製連結網址**，不要直接點擊 Sign in。
+4. 在 APP 選「登入 → 貼上 Magic Link（可看到辨識錯誤）」，按 Ctrl+V／⌘V 將網址貼入，點「在 APP 內驗證」。
+5. 若仍訪客，選「登入 → 檢查 APP 登入狀態」，截圖診斷視窗與登入後的畫面（不要包含登入 URL、憑證或人員資料）。
+
+**限制：** 單元測試不代表已使用真實電子郵件完成登入。登入是否成功需以 APP 顯示登入帳號與角色為準；本程式未修改 Netlify 或 Supabase 的伺服器設定。

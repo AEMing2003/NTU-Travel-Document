@@ -2,7 +2,7 @@
 
 const path = require('node:path');
 const {
-  app, BrowserWindow, Menu, dialog, clipboard, shell, session,
+  app, BrowserWindow, Menu, dialog, clipboard, shell, session, ipcMain,
 } = require('electron');
 const {
   APP_URL, isAppURL, isAppBlobURL, isTrustedMagicVerifyURL,
@@ -10,9 +10,10 @@ const {
 } = require('./src/url-policy');
 
 const APP_TITLE = '臺大出差文件製作站';
-const APP_VERSION = '1.0.1';
+const APP_VERSION = '1.0.2';
 const PERSISTENT_SESSION = 'persist:ntu-travel-document-studio';
 let mainWindow = null;
+let loginWindow = null;
 let offlineMode = false;
 
 if (!app.requestSingleInstanceLock()) {
@@ -28,6 +29,7 @@ if (!app.requestSingleInstanceLock()) {
   app.whenReady().then(() => {
     app.setAppUserModelId('app.local.ntu-travel-document-studio');
     setupSession();
+    setupLoginIPC();
     createWindow();
     createMenu();
     app.on('activate', () => {
@@ -155,6 +157,103 @@ function reloadWebsite() {
   mainWindow.loadURL(APP_URL).catch(() => {});
 }
 
+function setupLoginIPC() {
+  ipcMain.on('desktop:magic-link-submit', (event, provided) => {
+    // No website or arbitrary renderer is allowed to supply auth URLs.
+    if (!loginWindow || event.sender !== loginWindow.webContents) return;
+    const result = inspectMagicLinkClipboard(provided);
+    if (!result.link) {
+      event.reply('desktop:magic-link-feedback', {
+        ok: false,
+        reason: result.reason === 'multiple' ? '偵測到多個不同的驗證網址，請只貼上一個連結。'
+          : result.reason === 'not-url' ? '貼上的內容不是 HTTPS 登入網址，請使用「複製連結網址」。'
+          : '目前不支援這個登入網址的格式，請確認是 Supabase 登入信的原始連結。',
+        host: result.observedHost || '未偵測到網址',
+      });
+      return;
+    }
+    // Secrets are used in memory only: do not print, store, or send to external tools.
+    const validatedLink = result.link;
+    const popup = loginWindow;
+    loginWindow = null;
+    popup.close();
+    openValidatedMagicLink(validatedLink);
+  });
+  ipcMain.on('desktop:magic-link-cancel', (event) => {
+    if (loginWindow && event.sender === loginWindow.webContents) loginWindow.close();
+  });
+}
+
+function openValidatedMagicLink(link) {
+  if (!mainWindow) return;
+  offlineMode = false;
+  mainWindow.focus();
+  mainWindow.loadURL(link).catch(() => {
+    if (!mainWindow) return;
+    dialog.showMessageBox(mainWindow, {
+      type: 'error', title: '登入連結開啟失敗',
+      message: '連線或驗證轉址失敗。請在桌面程式重新寄信，並複製新郵件的原始登入連結。',
+    });
+  });
+}
+
+function showPasteMagicLinkDialog() {
+  if (!mainWindow) return;
+  if (loginWindow) { loginWindow.focus(); return; }
+  loginWindow = new BrowserWindow({
+    parent: mainWindow,
+    modal: true,
+    title: '貼上 Magic Link（桌面登入）',
+    width: 740,
+    height: 450,
+    minWidth: 600,
+    minHeight: 395,
+    show: false,
+    autoHideMenuBar: true,
+    backgroundColor: '#f7f9fc',
+    webPreferences: {
+      preload: path.join(__dirname, 'src', 'login-preload.js'),
+      nodeIntegration: false,
+      contextIsolation: true,
+      sandbox: true,
+      webSecurity: true,
+      devTools: false,
+    },
+  });
+  const popup = loginWindow;
+  popup.webContents.on('will-navigate', (e) => e.preventDefault());
+  popup.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+  popup.once('ready-to-show', () => popup.show());
+  popup.on('closed', () => { if (loginWindow === popup) loginWindow = null; });
+  popup.loadFile(path.join(__dirname, 'src', 'login-link.html')).catch(() => {
+    if (!popup.isDestroyed()) popup.close();
+  });
+}
+
+async function showLoginDiagnostics() {
+  if (!mainWindow) return;
+  const current = mainWindow.webContents.getURL();
+  let storage = '無法檢查';
+  if (isAppURL(current)) {
+    try {
+      const answer = await mainWindow.webContents.executeJavaScript(
+        `(() => Object.keys(localStorage).some(key => /^sb-[a-z0-9]+-auth-token$/.test(key)))()`, true,
+      );
+      storage = answer ? '有驗證資料紀錄（不等於已登入）' : '沒有發現標準 Supabase 登入資料';
+    } catch { /* inspect metadata only; no credential contents */ }
+  }
+  if (!mainWindow) return;
+  await dialog.showMessageBox(mainWindow, {
+    type: 'info', title: '桌面登入診斷',
+    message: `桌面程式版本：v${APP_VERSION}`,
+    detail: `目前畫面：${isAppURL(current) ? '正式網站' : '網站外／錯誤頁'}\n驗證儲存空間：${storage}\n\n`
+      + '如果使用手機 Gmail，請改在同一台 Windows／Mac 電腦開啟 Gmail。\n'
+      + '必須先由 APP 內寄出新的登入信，再複製「Sign in」的連結網址，\n'
+      + '回到 APP → 登入 → 貼上 Magic Link（視窗），貼入網址並點「在 APP 驗證」。\n'
+      + '請勿分享包含一次性登入憑證的完整網址。',
+  });
+}
+
 async function openMagicLinkFromClipboard() {
   if (!mainWindow) return;
   const result = inspectMagicLinkClipboard(clipboard.readText(), clipboard.readHTML());
@@ -179,14 +278,7 @@ async function openMagicLinkFromClipboard() {
     buttons: ['取消', '驗證登入'], cancelId: 0, defaultId: 1,
   });
   if (response !== 1 || !mainWindow) return;
-  offlineMode = false;
-  // Never log, persist, or echo the secret URL. The page handles its own tokens.
-  mainWindow.loadURL(result.link).catch(() => {
-    dialog.showMessageBox(mainWindow, {
-      type: 'error', title: '登入連結開啟失敗',
-      message: '請檢查網路，或重新寄送 Magic Link 並複製原始連結。',
-    });
-  });
+  openValidatedMagicLink(result.link);
 }
 
 function createMenu() {
@@ -206,7 +298,9 @@ function createMenu() {
       ...(isMac ? [] : [{ role: 'quit', label: '結束' }]),
     ]},
     { label: '登入', submenu: [
+      { label: '貼上 Magic Link（可看到辨識錯誤）', click: showPasteMagicLinkDialog },
       { label: '從剪貼簿開啟 Magic Link', accelerator: 'CmdOrCtrl+Shift+L', click: openMagicLinkFromClipboard },
+      { label: '檢查 APP 登入狀態', click: showLoginDiagnostics },
       { label: 'Magic Link 使用說明', click: async () => {
         if (!mainWindow) return;
         await dialog.showMessageBox(mainWindow, {
@@ -215,7 +309,8 @@ function createMenu() {
           detail: '① 在桌面程式填寫 Email，按網站的寄送登入信。\n'
             + '② 開啟信箱，對「登入按鈕」按右鍵，選擇複製連結網址；不要先點擊。\n'
             + '③ 回到桌面程式，按 Ctrl+Shift+L（Mac：⌘⇧L）。\n'
-            + '④ 確認後讓驗證頁返回本網站，完成登入。\n\n'
+            + '④ 如果剪貼簿無法解析，改用「登入 → 貼上 Magic Link（可看到辨識錯誤）」。\n'
+            + '⑤ 驗證完成後由 APP 網站顯示帳號身份；若仍是訪客，點「登入 → 檢查 APP 登入狀態」。\n\n'
             + '不要將登入連結或身分證號貼給其他人。',
         });
       }},

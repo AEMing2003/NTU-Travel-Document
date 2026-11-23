@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'self'; base-uri 'none'; form-action 'none'">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>在 APP 內使用 Magic Link 登入</title>
+<style>
+  :root { font-family: -apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; color:#17314a; background:#f7f9fc; }
+  body { margin:0; padding:24px 28px; font-size:14px; line-height:1.65; }
+  h1 { font-size:19px; margin:0 0 9px; } p { margin:5px 0 11px; }
+  .note { color:#4f6372; } label {display:block; font-weight:600; margin:14px 0 6px;}
+  input {box-sizing:border-box;width:100%;height:42px;border:1px solid #a8bfcb;border-radius:8px;padding:8px 10px;font-size:14px;}
+  input:focus {outline:2px solid #4f91b8;outline-offset:2px;}
+  .buttons { display:flex;justify-content:flex-end;gap:10px;margin-top:18px;}
+  button { padding:9px 16px;border-radius:8px;border:1px solid #b9cbd3;background:white;cursor:pointer;font-size:14px; }
+  button.primary {color:white;background:#14698a;border-color:#14698a;font-weight:600;}
+  #status {min-height:22px;margin:9px 0;color:#a42724;}
+  small {color:#4f6372;}
+</style>
+</head>
+<body>
+<h1>在桌面 APP 中驗證登入</h1>
+<p>請先在<strong>桌面 APP</strong> 寄送新的 Magic Link，然後在 <strong>同一台電腦</strong> 開啟 Gmail，對「Sign in」按右鍵，選「複製連結網址」。</p>
+<p class="note">不要直接點擊信件中的 Sign in：它通常會開啟一般瀏覽器，而不是 APP。</p>
+<form id="form" autocomplete="off">
+  <label for="magic">Magic Link 網址</label>
+  <input id="magic" name="magic" type="password" placeholder="在此按 Ctrl+V（Mac：⌘V）貼上整個登入連結" autocomplete="off" spellcheck="false" required>
+  <div id="status" role="status" aria-live="polite"></div>
+  <small>僅在本機記憶體解析，APP 只接受指定 Supabase 專案與官方網站的 HTTPS 驗證網址；不會寫入日誌或檔案。不要將連結貼到聊天訊息。</small>
+  <div class="buttons"><button id="cancel" type="button">取消</button><button type="submit" class="primary">在 APP 內驗證</button></div>
+</form>
+<script src="login-link.js"></script>
+</body>
+</html>

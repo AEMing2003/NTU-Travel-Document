@@ -1,14 +1,4 @@
-Desktop version: v1.0.1
-Date: 2026-11-23
-Project: 臺大出差文件製作站 Windows / macOS Desktop
-Platform: Electron (existing Netlify site and Supabase project)
-
-Change: Fix and diagnose Magic Link clipboard parsing for known Gmail and Outlook URL wrappers. Restrict trusted Supabase verification links to the project's exact host. Sanitize errors so tokens are never displayed.
-
-Verification:
-- node --test tests/*.test.js: 11 passed
-- npm run lint: passed
-- Windows / macOS native app real-email login: NOT YET VERIFIED
-- No changes to Netlify deployment or Supabase database.
-
-To deploy: Copy the files in this directory to the existing GitHub repository root, commit to main, and download the new workflow artifacts. The repository needs its original .github/workflows/build-desktop.yml file (included).
+臺大出差文件製作站桌面版 v1.0.2
+狀態：電子郵件 Magic Link 的桌面貼上介面與診斷修正版，未完成真實信件端到端驗收。
+網站：現有 Netlify/Supabase，未修改。
+先在 APP 寄信，同一台電腦從 Gmail 複製 Sign in 的原始連結，透過 APP 登入 → 貼上 Magic Link，在 APP 內完成。
