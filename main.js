@@ -10,7 +10,7 @@ const {
 } = require('./src/url-policy');
 
 const APP_TITLE = '臺大出差文件製作站';
-const APP_VERSION = '1.0.2';
+const APP_VERSION = '1.0.3';
 const PERSISTENT_SESSION = 'persist:ntu-travel-document-studio';
 let mainWindow = null;
 let loginWindow = null;
@@ -158,6 +158,12 @@ function reloadWebsite() {
 }
 
 function setupLoginIPC() {
+  // Only the sandboxed, local login dialog may read clipboard text, and only
+  // following an explicit click by the user. No logging or disk persistence.
+  ipcMain.handle('desktop:magic-link-read-clipboard', (event) => {
+    if (!loginWindow || event.sender !== loginWindow.webContents) return '';
+    return clipboard.readText().slice(0, 32768);
+  });
   ipcMain.on('desktop:magic-link-submit', (event, provided) => {
     // No website or arbitrary renderer is allowed to supply auth URLs.
     if (!loginWindow || event.sender !== loginWindow.webContents) return;
@@ -285,6 +291,8 @@ function createMenu() {
   const isMac = process.platform === 'darwin';
   const template = [
     ...(isMac ? [{ role: 'appMenu', label: APP_TITLE }] : []),
+    // Important on macOS: native edit roles enable Cmd+C / Cmd+V in modal inputs.
+    { role: 'editMenu', label: '編輯' },
     { label: '檔案', submenu: [
       { label: '重新開啟網站', accelerator: 'CmdOrCtrl+R', click: reloadWebsite },
       { label: '以瀏覽器開啟網站', click: () => shell.openExternal(APP_URL) },
