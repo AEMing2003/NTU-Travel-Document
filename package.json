@@ -1,0 +1,92 @@
+{
+  "name": "ntu-travel-document-studio-desktop",
+  "version": "1.0.0",
+  "private": true,
+  "description": "臺大出差文件製作站—Windows 與 macOS 桌面版（連接既有 Netlify/Supabase）",
+  "main": "main.js",
+  "author": "Travel Document Studio Desktop Project",
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "start": "electron .",
+    "test": "node --test tests/*.test.js",
+    "lint": "node --check main.js && node --check src/url-policy.js",
+    "dist:win": "electron-builder --win nsis portable --x64",
+    "dist:mac": "electron-builder --mac dmg zip --x64 --arm64"
+  },
+  "devDependencies": {
+    "electron": "45.4.1",
+    "electron-builder": "26.18.0"
+  },
+  "build": {
+    "appId": "app.local.ntu-travel-document-studio",
+    "productName": "臺大出差文件製作站",
+    "asar": true,
+    "directories": {
+      "output": "dist",
+      "buildResources": "assets"
+    },
+    "files": [
+      "main.js",
+      "src/**/*",
+      "assets/icon.png",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "assets/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "uninstallDisplayName": "臺大出差文件製作站（桌面版）",
+      "artifactName": "NTU-Travel-Document-Studio-v${version}-Windows-Setup-${arch}.${ext}"
+    },
+    "mac": {
+      "category": "public.app-category.productivity",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ],
+      "icon": "assets/icon.icns",
+      "identity": null,
+      "artifactName": "NTU-Travel-Document-Studio-v${version}-macOS-${arch}.${ext}"
+    },
+    "dmg": {
+      "title": "臺大出差文件製作站 ${version}"
+    },
+    "publish": null,
+    "portable": {
+      "artifactName": "NTU-Travel-Document-Studio-v${version}-Windows-Portable-${arch}.${ext}"
+    }
+  }
+}
